@@ -1,0 +1,7 @@
+# functions/requirements.txt - Dependências para o deploy no Firebase
+
+firebase-functions
+firebase-admin
+google-cloud-firestore
+google-cloud-storage
+requests

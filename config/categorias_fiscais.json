@@ -1,0 +1,164 @@
+[
+  {
+    "categoria": "Arroz",
+    "ncms_esperados": ["1006"],
+    "regex_produtos": [
+      "\\bARROZ\\b(?!.*\\b(DOCE|TEMPERADO|PRONTO|RISOTO)\\b)"
+    ],
+    "notas": "Padrão para arroz cru. Exclui pratos prontos ou sobremesas."
+  },
+  {
+    "categoria": "Feijão",
+    "ncms_esperados": ["0713"],
+    "regex_produtos": [
+      "\\bFEIJ(A|Ã)O\\b(?!.*\\b(PRONTO|TEMPERADO|TROPEIRO)\\b)"
+    ],
+    "notas": "Padrão para feijão cru."
+  },
+  {
+    "categoria": "Leite UHT, Pasteurizado e em Pó",
+    "ncms_esperados": ["0401", "0402"],
+    "regex_produtos": [
+      "\\b(LEITE|LCT|COMPOSTO\\s+LACTEO)\\b(?!.*\\b(CONDENSADO|CREME\\s+DE|DOCE\\s+DE|COCO|SOJA|AVEIA|AMENDOA|CASTANHA|ALCOOLICO)\\b)"
+    ],
+    "notas": "Captura Leite UHT, Pasteurizado e em Pó. Exclui ativamente derivados com outra tributação (creme de leite, leite condensado) e 'leites' vegetais."
+  },
+  {
+    "categoria": "Óleos Vegetais Comestíveis",
+    "ncms_esperados": ["1507", "1508", "1512", "1514"],
+    "regex_produtos": [
+      "\\bOLEO\\s+(DE\\s+)?(SOJA|GIRASSOL|CANOLA|MILHO)\\b(?!.*\\b(ESSENCIAL|CORPORAL|MOTOR)\\b)"
+    ],
+    "notas": "Foco em óleos de cozinha comuns. Exclui óleos não alimentícios."
+  },
+  {
+    "categoria": "Margarina",
+    "ncms_esperados": ["1517"],
+    "regex_produtos": [
+      "\\bMARGARINA\\b",
+      "\\bCREME\\s+VEGETAL\\b"
+    ]
+  },
+  {
+    "categoria": "Manteiga",
+    "ncms_esperados": ["0405"],
+    "regex_produtos": [
+      "\\bMANTEIGA\\b(?!.*\\b(CACAU|KARITE|AMENDOIM)\\b)"
+    ],
+    "notas": "Exclui manteigas não lácteas."
+  },
+  {
+    "categoria": "Farinhas (Trigo, Milho, Mandioca)",
+    "ncms_esperados": ["1101", "110220", "110620"],
+    "regex_produtos": [
+      "\\bFAR(INHA)?\\s+DE\\s+(TRIGO|MILHO|MANDIOCA)\\b",
+      "\\bFUBA\\b"
+    ]
+  },
+  {
+    "categoria": "Café Torrado e Moído",
+    "ncms_esperados": ["0901"],
+    "regex_produtos": [
+      "\\b(CAFE|CAFÉ)\\b(?!.*\\b(BOMBOM|BALA|LICOR|CAPPUCCINO|SOLUVEL|FILTRO|GARRAFA|TERMINCA)\\b)"
+    ],
+    "notas": "Foco em café em pó ou grão. Exclui derivados, solúveis e utensílios."
+  },
+  {
+    "categoria": "Açúcar",
+    "ncms_esperados": ["1701"],
+    "regex_produtos": [
+      "\\bAÇ(U|Ú)CAR\\b(?!.*\\b(BAUNILHA|CONFEITEIRO|MASCAVO|DEMERARA|LIGHT)\\b)"
+    ],
+    "notas": "Foco em açúcar refinado/cristal comum. Outros tipos podem ter NCMs diferentes."
+  },
+  {
+    "categoria": "Massas Alimentícias Secas",
+    "ncms_esperados": ["19021100", "19021900"],
+    "regex_produtos": [
+      "\\b(ESPAGUETE|MACARRAO|TALHARIM|PENNE|PARAFUSO|LASANHA|FETTUCCINE|PATER NOSTER)\\b(?!.*\\b(INSTANTANEO|PRONTO|MOLHO|RECHEAD(O|A))\\b)"
+    ],
+    "notas": "Foco em massa seca não preparada."
+  },
+  {
+    "categoria": "Pães Comuns",
+    "ncms_esperados": ["1905"],
+    "regex_produtos": [
+      "\\bP(A|Ã)O\\s+(FRANCES|D'AGUA|SOVADO|CASEIRO)\\b",
+      "\\bBISNAGA\\b"
+    ],
+    "notas": "Foco em pães básicos de padaria. Pães industrializados ou especiais podem ter outra análise."
+  },
+  {
+    "categoria": "Carnes Bovinas (cortes crus)",
+    "ncms_esperados": ["0201", "0202"],
+    "regex_produtos": [
+      "\\b(ACEM|ALCATRA|CONTRA(-|\\s)?FILE|COXAO|CUPIM|FILE(-|\\s)?MIGNON|FRALDINHA|LAGARTO|MAMINHA|MUSCULO|PALETA|PATINHO|PICANHA)\\b(?!.*\\b(TEMPERAD(O|A)|BIFE\\s+A|PRONT(O|A))\\b)",
+      "\\bCARNE\\s+(BOVINA|MOIDA|DE\\s+PRIMEIRA|DE\\s+SEGUNDA)\\b(?!.*\\b(TEMPERAD(O|A)|PRONT(O|A))\\b)"
+    ],
+    "notas": "Regex para cortes comuns de carne bovina, excluindo pratos prontos ou temperados."
+  },
+  {
+    "categoria": "Carnes de Aves (cortes crus)",
+    "ncms_esperados": ["0207"],
+    "regex_produtos": [
+      "\\b(FRANGO|AVE|GALINHA)\\b(?!.*\\b(ASSADO|TEMPERADO|PRONTO|EMPANADO|NUGGETS|SALSICHA|LINGUIÇA)\\b)",
+      "\\b(ASA|COXA|CORACAO|FILE|PEITO|SOBRECOXA|DRUMET)(S)?\\s+(DE\\s+)?FRANGO\\b(?!.*\\b(TEMPERAD(O|A)|PRONT(O|A))\\b)"
+    ],
+    "notas": "Regex para cortes de aves, excluindo processados e pratos prontos."
+  },
+  {
+    "categoria": "Carnes Suínas (cortes crus)",
+    "ncms_esperados": ["0203"],
+    "regex_produtos": [
+      "\\b(BISTECA|LOMBO|PERNIL|COSTELA|PALETA)\\s+SUIN(A|O)\\b(?!.*\\b(TEMPERAD(O|A)|DEFUMAD(O|A)|PRONT(O|A))\\b)"
+    ],
+    "notas": "Regex para cortes suínos, excluindo processados."
+  },
+  {
+    "categoria": "Queijos",
+    "ncms_esperados": ["0406"],
+    "regex_produtos": [
+      "\\bQUEIJO\\b(?!.*\\b(RALADO|CREMOSO|REQUEIJAO|CHEDDAR\\s+FATIA|PETIT\\s+SUISSE)\\b)",
+      "\\b(MUSSARELA|MUÇARELA|PRATO|MINAS|COALHO|RICOTA|PROVOLONE)\\b"
+    ],
+    "notas": "Captura queijos comuns em peça ou fatia. Exclui queijo ralado e cremosos/requeijão que podem ter outra tributação."
+  },
+  {
+    "categoria": "Iogurtes",
+    "ncms_esperados": ["0403"],
+    "regex_produtos": [
+      "\\b(IOGURTE|BEBIDA\\s+LACTEA)\\b"
+    ]
+  },
+  {
+    "categoria": "Sabonetes em Barra",
+    "ncms_esperados": ["340111"],
+    "regex_produtos": [
+      "\\bSABONETE\\b(?!.*\\b(LIQUIDO|INTIMO|FACIAL)\\b)"
+    ],
+    "notas": "Foco em sabonete em barra, conforme legislação."
+  },
+  {
+    "categoria": "Papel Higiênico",
+    "ncms_esperados": ["48181000"],
+    "regex_produtos": [
+      "\\bP(APEL)?\\s+HIGIENICO\\b"
+    ]
+  },
+  {
+    "categoria": "Creme Dental / Dentifrício",
+    "ncms_esperados": ["33061000"],
+    "regex_produtos": [
+      "\\b(CREME|PASTA)\\s+DENTAL\\b",
+      "\\bDENTIFRICIO\\b"
+    ]
+  },
+  {
+    "categoria": "Absorventes e Fraldas",
+    "ncms_esperados": ["96190000"],
+    "regex_produtos": [
+      "\\bABSORVENTE\\b",
+      "\\bFRALDA\\s+(DESCARTAVEL|INFANTIL|GERIATRICA)\\b"
+    ]
+  }
+]

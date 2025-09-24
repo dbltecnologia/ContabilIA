@@ -1,0 +1,19 @@
+[SEFAZ]
+# CNPJ da empresa que irá consultar as notas (apenas números)
+CNPJ = 19019208000180
+
+# Caminho para o arquivo do Certificado Digital A1 (ex: /home/user/certificado.pfx)
+CERT_PATH = certificado_js.pfx
+
+# Senha do Certificado Digital A1
+CERT_PASSWORD = 00000000
+
+[CONTROLE]
+# Nome do arquivo para guardar o estado (último NSU, etc).
+STATE_FILE = state.json
+
+# Pasta onde os XMLs serão salvos.
+OUTPUT_DIR = output
+
+# Nome do arquivo de log para registrar a execução.
+LOG_FILE = robo_dfe.log
