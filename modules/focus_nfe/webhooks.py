@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 from .database import get_db
-from .models import WebhookLog, Invoice
+from .models import WebhookLog, Invoice, InvoiceEvent
 from .focus_client import FocusNFSeClient
 import os
 import httpx
@@ -31,6 +31,15 @@ async def process_focusnfe_webhook(payload: dict, db: Session):
     # 1. Atualizar Invoice
     invoice = db.query(Invoice).filter(Invoice.referencia == ref).first()
     if invoice:
+        # Registrar evento na timeline
+        event = InvoiceEvent(
+            invoice_id=invoice.id,
+            status=status,
+            message=f"Atualização recebida via Webhook: {status}",
+            data=payload
+        )
+        db.add(event)
+        
         invoice.status = status
         invoice.response_data = payload
         

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, validator, root_validator
 from datetime import datetime
 
 class Endereco(BaseModel):
@@ -17,12 +17,35 @@ class Prestador(BaseModel):
     inscricao_municipal: Optional[str] = None
     codigo_municipio: str
 
+    @validator("cnpj")
+    def validate_cnpj(cls, v):
+        cnpj = "".join(filter(str.isdigit, v))
+        if len(cnpj) != 14:
+            raise ValueError("CNPJ deve ter 14 dígitos numéricos")
+        return cnpj
+
 class Tomador(BaseModel):
     cnpj: Optional[str] = None
     cpf: Optional[str] = None
     razao_social: str
     email: Optional[EmailStr] = None
     endereco: Endereco
+
+    @root_validator
+    def check_cpf_cnpj(cls, values):
+        cpf = values.get("cpf")
+        cnpj = values.get("cnpj")
+        if not cpf and not cnpj:
+            raise ValueError("Deve ser fornecido CPF ou CNPJ do tomador")
+        if cpf:
+            values["cpf"] = "".join(filter(str.isdigit, cpf))
+            if len(values["cpf"]) != 11:
+                raise ValueError("CPF deve ter 11 dígitos")
+        if cnpj:
+            values["cnpj"] = "".join(filter(str.isdigit, cnpj))
+            if len(values["cnpj"]) != 14:
+                raise ValueError("CNPJ deve ter 14 dígitos")
+        return values
 
 class Servico(BaseModel):
     aliquota: float

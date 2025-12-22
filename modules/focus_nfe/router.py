@@ -11,7 +11,7 @@ from .schemas import (
     MDFeCreate, MDFeResponse
 )
 from .database import get_db
-from .models import Invoice
+from .models import Invoice, InvoiceEvent
 import os
 
 router = APIRouter(prefix="/nfse", tags=["NFSe"])
@@ -53,6 +53,15 @@ async def emit_invoice(
         response_data=response.body
     )
     db.add(db_invoice)
+    db.flush()
+    
+    # Registrar evento inicial na timeline
+    db.add(InvoiceEvent(
+        invoice_id=db_invoice.id,
+        status="enviado",
+        message="NFSe enviada para a FocusNFE",
+        data=response.body
+    ))
     db.commit()
     
     return response.body
@@ -94,6 +103,15 @@ async def emit_nfe(
         response_data=response.body
     )
     db.add(db_invoice)
+    db.flush()
+    
+    # Registrar evento
+    db.add(InvoiceEvent(
+        invoice_id=db_invoice.id,
+        status="enviado",
+        message="NFe enviada para a FocusNFE",
+        data=response.body
+    ))
     db.commit()
     
     return response.body
@@ -123,6 +141,15 @@ async def emit_nfce(
         response_data=response.body
     )
     db.add(db_invoice)
+    db.flush()
+    
+    # Evento
+    db.add(InvoiceEvent(
+        invoice_id=db_invoice.id,
+        status="enviado",
+        message="NFCe enviada para a FocusNFE",
+        data=response.body
+    ))
     db.commit()
     
     return response.body
@@ -179,6 +206,31 @@ async def manifest_received_nfe(
 
     return response.body
 
+# --- Dashboard & Analytics ---
+
+@router.get("/dashboard/stats", tags=["Dashboard"])
+async def get_dashboard_stats(db: Session = Depends(get_db)):
+    """Retorna estatísticas rápidas para o Dashboard."""
+    from sqlalchemy import func
+    stats = db.query(Invoice.status, func.count(Invoice.id)).group_by(Invoice.status).all()
+    return {status: count for status, count in stats}
+
+@router.get("/dashboard/list", tags=["Dashboard"])
+async def list_dashboard_invoices(
+    limit: int = 50, 
+    db: Session = Depends(get_db)
+):
+    """Lista as últimas notas com informações básicas para o Dashboard."""
+    return db.query(Invoice).order_by(Invoice.created_at.desc()).limit(limit).all()
+
+@router.get("/{ref}/timeline", tags=["Dashboard"])
+async def get_invoice_timeline(ref: str, db: Session = Depends(get_db)):
+    """Retorna a linha do tempo de eventos de uma nota."""
+    invoice = db.query(Invoice).filter(Invoice.referencia == ref).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Nota não encontrada.")
+    return invoice.events
+
 # --- CTe (Transporte) ---
 
 @router.post("/cte/", response_model=CTeResponse, tags=["CTe"])
@@ -204,6 +256,14 @@ async def emit_cte(
         response_data=response.body
     )
     db.add(db_invoice)
+    db.flush()
+    
+    db.add(InvoiceEvent(
+        invoice_id=db_invoice.id,
+        status="enviado",
+        message="CTe enviado para a FocusNFE",
+        data=response.body
+    ))
     db.commit()
     
     return response.body
@@ -233,6 +293,14 @@ async def emit_mdfe(
         response_data=response.body
     )
     db.add(db_invoice)
+    db.flush()
+    
+    db.add(InvoiceEvent(
+        invoice_id=db_invoice.id,
+        status="enviado",
+        message="MDFe enviado para a FocusNFE",
+        data=response.body
+    ))
     db.commit()
     
     return response.body

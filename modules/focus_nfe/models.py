@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -18,6 +19,21 @@ class Invoice(Base):
     xml_url = Column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamento com eventos (Timeline)
+    events = relationship("InvoiceEvent", back_populates="invoice", cascade="all, delete-orphan")
+
+class InvoiceEvent(Base):
+    __tablename__ = "invoice_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_id = Column(Integer, ForeignKey("invoices.id"))
+    status = Column(String(50))
+    message = Column(Text, nullable=True)
+    data = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    invoice = relationship("Invoice", back_populates="events")
 
 class WebhookLog(Base):
     __tablename__ = "webhook_logs"
