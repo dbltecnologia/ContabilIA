@@ -117,3 +117,35 @@ python main.py analisar caminho/para/a/sua/pasta/de/xmls
   - **Requests:** Para requisições HTTP à API da Thomson Reuters.
   - **python-dotenv:** Para gerenciar variáveis de ambiente de forma segura.
   - **argparse:** Para criar uma interface de linha de comando robusta.
+
+## 🧩 Integração adicional: Focus NFe (API)
+
+Esta integração é **independente** da integração atual com SEFAZ via PyNFe (ou seja, mantém o que já existe hoje) e fica em `modules/focus_nfe/`.
+
+### Configuração
+
+Defina no `.env` (veja `.env.example`):
+
+- `FOCUS_NFE_TOKEN`
+- `FOCUS_NFE_BASE_URL` (opcional, default `https://api.focusnfe.com.br`)
+- `FOCUS_NFE_ENV` (opcional: `producao`|`homologacao`, usado se `FOCUS_NFE_BASE_URL` não estiver definido)
+
+### Uso (CLI mínima)
+
+Criar/solicitar emissão (exemplo):
+
+```bash
+python -m modules.focus_nfe.cli create --doc nfe --ref MINHA_REF --json payload.json
+```
+
+Consultar status:
+
+```bash
+python -m modules.focus_nfe.cli status --doc nfe --ref MINHA_REF
+```
+
+Baixar XML/PDF:
+
+```bash
+python -m modules.focus_nfe.cli download --doc nfe --ref MINHA_REF --format xml --out ./out/minha_nfe.xml
+```

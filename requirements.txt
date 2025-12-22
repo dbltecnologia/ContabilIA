@@ -2,3 +2,11 @@ cryptography
 lxml
 pynfe
 requests
+httpx
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+sqlalchemy
+python-multipart
+python-dotenv

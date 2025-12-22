@@ -1,0 +1,28 @@
+from fastapi import FastAPI
+from modules.focus_nfe.router import router as focus_router
+from modules.focus_nfe.webhooks import router as webhook_router
+from modules.focus_nfe.database import init_db
+import uvicorn
+
+app = FastAPI(
+    title="Contabil IA - API Server",
+    description="API para gestão de documentos fiscais integrando FocusNFE e outros módulos.",
+    version="1.0.0"
+)
+
+# Startup event
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+# Root endpoint
+@app.get("/")
+async def root():
+    return {"message": "Contabil IA API is running", "docs": "/docs"}
+
+# Include Routers
+app.include_router(focus_router)
+app.include_router(webhook_router)
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
