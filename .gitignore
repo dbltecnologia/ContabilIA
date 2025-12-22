@@ -9,3 +9,9 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .DS_Store
+node_modules/
+dist/
+dashboard/node_modules/
+dashboard/dist/
+*.db
+storage/invoices/
