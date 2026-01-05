@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional
-from pydantic import BaseModel, Field, EmailStr, validator, root_validator
+from pydantic import BaseModel, Field, EmailStr, validator, model_validator, ValidationInfo
 from datetime import datetime
 
 class Endereco(BaseModel):
@@ -31,21 +31,21 @@ class Tomador(BaseModel):
     email: Optional[EmailStr] = None
     endereco: Endereco
 
-    @root_validator
-    def check_cpf_cnpj(cls, values):
-        cpf = values.get("cpf")
-        cnpj = values.get("cnpj")
+    @model_validator(mode="after")
+    def check_cpf_cnpj(self) -> "Tomador":
+        cpf = self.cpf
+        cnpj = self.cnpj
         if not cpf and not cnpj:
             raise ValueError("Deve ser fornecido CPF ou CNPJ do tomador")
         if cpf:
-            values["cpf"] = "".join(filter(str.isdigit, cpf))
-            if len(values["cpf"]) != 11:
+            self.cpf = "".join(filter(str.isdigit, cpf))
+            if len(self.cpf) != 11:
                 raise ValueError("CPF deve ter 11 dígitos")
         if cnpj:
-            values["cnpj"] = "".join(filter(str.isdigit, cnpj))
-            if len(values["cnpj"]) != 14:
+            self.cnpj = "".join(filter(str.isdigit, cnpj))
+            if len(self.cnpj) != 14:
                 raise ValueError("CNPJ deve ter 14 dígitos")
-        return values
+        return self
 
 class Servico(BaseModel):
     aliquota: float

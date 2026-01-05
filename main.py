@@ -23,8 +23,8 @@ async def root():
     return {"message": "Contabil IA API is running", "docs": "/docs"}
 
 # Include Routers
-app.include_router(focus_router)
-app.include_router(webhook_router)
+app.include_router(focus_router, prefix="/api")
+app.include_router(webhook_router, prefix="/api")
 
 # Serve Storage (PDFs/XMLs)
 if not os.path.exists("storage"):

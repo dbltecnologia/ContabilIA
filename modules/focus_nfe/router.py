@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Header
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from .focus_client import FocusNFSeClient
+from .focus_client import FocusNFeClient
 from .schemas import (
-    NFSeCreate, NFSeResponse, 
-    NFeCreate, NFeResponse, 
+    NFSeCreate, NFSeResponse,
+    NFeCreate, NFeResponse,
     MDeRequest,
     NFCeCreate, NFCeResponse,
     CTeCreate, CTeResponse,
@@ -14,7 +14,41 @@ from .database import get_db
 from .models import Invoice, InvoiceEvent
 import os
 
-router = APIRouter(prefix="/nfse", tags=["NFSe"])
+nfse_router = APIRouter(prefix="/nfse", tags=["NFSe"])
+nfe_router = APIRouter(prefix="/nfe", tags=["NFe"])
+nfce_router = APIRouter(prefix="/nfce", tags=["NFCe"])
+cte_router = APIRouter(prefix="/cte", tags=["CTe"])
+mdfe_router = APIRouter(prefix="/mdfe", tags=["MDFe"])
+received_router = APIRouter(prefix="/recebidos", tags=["Recebidos"])
+dashboard_router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+local_data_router = APIRouter(prefix="/local", tags=["Local Data"])
+
+# Main router for this module
+router = APIRouter()
+
+def _save_invoice(db: Session, ref: str, doc_type: str, payload: dict, response: dict) -> Invoice:
+    """Cria a nota e o primeiro evento no banco de dados."""
+    db_invoice = Invoice(
+        referencia=ref,
+        external_id=str(response.get("id")) if response.get("id") else None,
+        type=doc_type,
+        status=response.get("status", "processing"),
+        payload=payload,
+        response_data=response
+    )
+    db.add(db_invoice)
+    db.flush()
+    
+    # Registrar evento inicial na timeline
+    db.add(InvoiceEvent(
+        invoice_id=db_invoice.id,
+        status="enviado",
+        message=f"{doc_type.upper()} enviada para a FocusNFE",
+        data=response
+    ))
+    db.commit()
+    return db_invoice
+
 
 def get_focus_client(x_focus_token: Optional[str] = Header(None, description="Token da Focus NFe para multi-clientes")):
     """
@@ -22,7 +56,7 @@ def get_focus_client(x_focus_token: Optional[str] = Header(None, description="To
     Se o header X-Focus-Token for enviado, usa ele para autenticação.
     Caso contrário, usa o token padrão do .env.
     """
-    client = FocusNFSeClient(token=x_focus_token)
+    client = FocusNFeClient(token=x_focus_token)
     try:
         yield client
     finally:
@@ -30,11 +64,11 @@ def get_focus_client(x_focus_token: Optional[str] = Header(None, description="To
 
 # --- NFSe (Serviço) ---
 
-@router.post("/", response_model=NFSeResponse)
+@nfse_router.post("/", response_model=NFSeResponse)
 async def emit_invoice(
-    nfse: NFSeCreate, 
-    ref: str, 
-    client: FocusNFSeClient = Depends(get_focus_client),
+    nfse: NFSeCreate,
+    ref: str,
+    client: FocusNFeClient = Depends(get_focus_client),
     db: Session = Depends(get_db)
 ):
     """Emite uma nova NFSe."""
@@ -44,33 +78,15 @@ async def emit_invoice(
     if not response.ok:
         raise HTTPException(status_code=response.status_code, detail=response.body)
     
-    db_invoice = Invoice(
-        referencia=ref,
-        external_id=str(response.body.get("id")) if response.body.get("id") else None,
-        type="nfse",
-        status=response.body.get("status", "processing"),
-        payload=payload,
-        response_data=response.body
-    )
-    db.add(db_invoice)
-    db.flush()
-    
-    # Registrar evento inicial na timeline
-    db.add(InvoiceEvent(
-        invoice_id=db_invoice.id,
-        status="enviado",
-        message="NFSe enviada para a FocusNFE",
-        data=response.body
-    ))
-    db.commit()
+    _save_invoice(db, ref, "nfse", payload, response.body)
     
     return response.body
 
-@router.get("/", response_model=List[NFSeResponse])
+@nfse_router.get("/", response_model=List[NFSeResponse])
 async def list_invoices(
     status: Optional[str] = Query(None),
     cnpj_prestador: Optional[str] = Query(None),
-    client: FocusNFSeClient = Depends(get_focus_client)
+    client: FocusNFeClient = Depends(get_focus_client)
 ):
     """Lista as últimas NFSe."""
     response = client.listar_nfse(cnpj_prestador=cnpj_prestador, status=status)
@@ -78,13 +94,23 @@ async def list_invoices(
         raise HTTPException(status_code=response.status_code, detail=response.body)
     return response.body
 
+@nfse_router.get("/municipio/{ibge}")
+async def check_city_requirements(ibge: str, client: FocusNFeClient = Depends(get_focus_client)):
+    """
+    Consulta requisitos municipais para emissão.
+    """
+    response = client.consultar_municipio(ibge)
+    if not response.ok:
+        raise HTTPException(status_code=response.status_code, detail=response.body)
+    return response.body
+
 # --- NFe (Produtos) ---
 
-@router.post("/nfe/", response_model=NFeResponse, tags=["NFe"])
+@nfe_router.post("/", response_model=NFeResponse)
 async def emit_nfe(
-    nfe: NFeCreate, 
-    ref: str, 
-    client: FocusNFSeClient = Depends(get_focus_client),
+    nfe: NFeCreate,
+    ref: str,
+    client: FocusNFeClient = Depends(get_focus_client),
     db: Session = Depends(get_db)
 ):
     """Emite uma nova NFe."""
@@ -94,35 +120,41 @@ async def emit_nfe(
     if not response.ok:
         raise HTTPException(status_code=response.status_code, detail=response.body)
     
-    db_invoice = Invoice(
-        referencia=ref,
-        external_id=str(response.body.get("id")) if response.body.get("id") else None,
-        type="nfe",
-        status=response.body.get("status", "processing"),
-        payload=payload,
-        response_data=response.body
-    )
-    db.add(db_invoice)
-    db.flush()
+    _save_invoice(db, ref, "nfe", payload, response.body)
     
-    # Registrar evento
-    db.add(InvoiceEvent(
-        invoice_id=db_invoice.id,
-        status="enviado",
-        message="NFe enviada para a FocusNFE",
-        data=response.body
-    ))
-    db.commit()
-    
+    return response.body
+
+@nfe_router.get("/{ref}", response_model=NFeResponse)
+async def get_nfe(ref: str, client: FocusNFeClient = Depends(get_focus_client)):
+    """Consulta detalhes de uma NFe."""
+    response = client.consultar_nfe(ref)
+    if not response.ok:
+        raise HTTPException(status_code=response.status_code, detail=response.body)
+    return response.body
+
+@nfe_router.delete("/{ref}")
+async def cancel_nfe(ref: str, justificativa: str, client: FocusNFeClient = Depends(get_focus_client)):
+    """Cancela uma NFe."""
+    response = client.cancelar_nfe(ref, justificativa)
+    if not response.ok:
+        raise HTTPException(status_code=response.status_code, detail=response.body)
+    return response.body
+
+@nfe_router.post("/{ref}/carta_correcao")
+async def post_nfe_correcao(ref: str, texto: str, client: FocusNFeClient = Depends(get_focus_client)):
+    """Cria uma Carta de Correção Eletrônica para a NFe."""
+    response = client.carta_correcao_nfe(ref, texto)
+    if not response.ok:
+        raise HTTPException(status_code=response.status_code, detail=response.body)
     return response.body
 
 # --- NFCe (Varejo) ---
 
-@router.post("/nfce/", response_model=NFCeResponse, tags=["NFCe"])
+@nfce_router.post("/", response_model=NFCeResponse)
 async def emit_nfce(
-    nfce: NFCeCreate, 
-    ref: str, 
-    client: FocusNFSeClient = Depends(get_focus_client),
+    nfce: NFCeCreate,
+    ref: str,
+    client: FocusNFeClient = Depends(get_focus_client),
     db: Session = Depends(get_db)
 ):
     """Emite uma nova NFCe (Varejo)."""
@@ -132,112 +164,17 @@ async def emit_nfce(
     if not response.ok:
         raise HTTPException(status_code=response.status_code, detail=response.body)
     
-    db_invoice = Invoice(
-        referencia=ref,
-        external_id=str(response.body.get("id")) if response.body.get("id") else None,
-        type="nfce",
-        status=response.body.get("status", "processing"),
-        payload=payload,
-        response_data=response.body
-    )
-    db.add(db_invoice)
-    db.flush()
-    
-    # Evento
-    db.add(InvoiceEvent(
-        invoice_id=db_invoice.id,
-        status="enviado",
-        message="NFCe enviada para a FocusNFE",
-        data=response.body
-    ))
-    db.commit()
+    _save_invoice(db, ref, "nfce", payload, response.body)
     
     return response.body
-
-@router.get("/nfe/{ref}", response_model=NFeResponse, tags=["NFe"])
-async def get_nfe(ref: str, client: FocusNFSeClient = Depends(get_focus_client)):
-    """Consulta detalhes de uma NFe."""
-    response = client.consultar_nfe(ref)
-    if not response.ok:
-        raise HTTPException(status_code=response.status_code, detail=response.body)
-    return response.body
-
-@router.delete("/nfe/{ref}", tags=["NFe"])
-async def cancel_nfe(ref: str, justificativa: str, client: FocusNFSeClient = Depends(get_focus_client)):
-    """Cancela uma NFe."""
-    response = client.cancelar_nfe(ref, justificativa)
-    if not response.ok:
-        raise HTTPException(status_code=response.status_code, detail=response.body)
-    return response.body
-
-@router.post("/nfe/{ref}/carta_correcao", tags=["NFe"])
-async def post_nfe_correcao(ref: str, texto: str, client: FocusNFSeClient = Depends(get_focus_client)):
-    """Cria uma Carta de Correção Eletrônica para a NFe."""
-    response = client.carta_correcao_nfe(ref, texto)
-    if not response.ok:
-        raise HTTPException(status_code=response.status_code, detail=response.body)
-    return response.body
-
-# --- Notas Recebidas (Entrada) & MDe ---
-
-@router.get("/recebidos/nfe", tags=["Recebidos"])
-async def list_received_nfe(
-    cnpj: str, 
-    client: FocusNFSeClient = Depends(get_focus_client),
-    pagina: int = 1
-):
-    """Consulta NFe emitidas contra o CNPJ (Notas de Entrada)."""
-    response = client.consultar_nfe_recebidas(cnpj, pagina=pagina)
-    if not response.ok:
-        raise HTTPException(status_code=response.status_code, detail=response.body)
-    return response.body
-
-@router.post("/recebidos/nfe/{chave}/manifestar", tags=["Recebidos"])
-async def manifest_received_nfe(
-    chave: str, 
-    req: MDeRequest, 
-    client: FocusNFSeClient = Depends(get_focus_client)
-):
-    """Realiza a Manifestação do Destinatário (MDe)."""
-    response = client.manifestar_nfe(chave, req.tipo, req.justificativa)
-    if not response.ok:
-        raise HTTPException(status_code=response.status_code, detail=response.body)
-    return response.body
-
-    return response.body
-
-# --- Dashboard & Analytics ---
-
-@router.get("/dashboard/stats", tags=["Dashboard"])
-async def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Retorna estatísticas rápidas para o Dashboard."""
-    from sqlalchemy import func
-    stats = db.query(Invoice.status, func.count(Invoice.id)).group_by(Invoice.status).all()
-    return {status: count for status, count in stats}
-
-@router.get("/dashboard/list", tags=["Dashboard"])
-async def list_dashboard_invoices(
-    limit: int = 50, 
-    db: Session = Depends(get_db)
-):
-    """Lista as últimas notas com informações básicas para o Dashboard."""
-    return db.query(Invoice).order_by(Invoice.created_at.desc()).limit(limit).all()
-
-@router.get("/{ref}/timeline", tags=["Dashboard"])
-async def get_invoice_timeline(ref: str, db: Session = Depends(get_db)):
-    """Retorna a linha do tempo de eventos de uma nota."""
-    invoice = db.query(Invoice).filter(Invoice.referencia == ref).first()
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Nota não encontrada.")
-    return invoice.events
 
 # --- CTe (Transporte) ---
 
-@router.post("/cte/", response_model=CTeResponse, tags=["CTe"])
+@cte_router.post("/", response_model=CTeResponse)
 async def emit_cte(
-    cte: CTeCreate, 
-    ref: str, 
-    client: FocusNFSeClient = Depends(get_focus_client),
+    cte: CTeCreate,
+    ref: str,
+    client: FocusNFeClient = Depends(get_focus_client),
     db: Session = Depends(get_db)
 ):
     """Emite um novo CTe."""
@@ -247,34 +184,17 @@ async def emit_cte(
     if not response.ok:
         raise HTTPException(status_code=response.status_code, detail=response.body)
     
-    db_invoice = Invoice(
-        referencia=ref,
-        external_id=str(response.body.get("id")) if response.body.get("id") else None,
-        type="cte",
-        status=response.body.get("status", "processing"),
-        payload=payload,
-        response_data=response.body
-    )
-    db.add(db_invoice)
-    db.flush()
-    
-    db.add(InvoiceEvent(
-        invoice_id=db_invoice.id,
-        status="enviado",
-        message="CTe enviado para a FocusNFE",
-        data=response.body
-    ))
-    db.commit()
+    _save_invoice(db, ref, "cte", payload, response.body)
     
     return response.body
 
 # --- MDFe (Manifesto) ---
 
-@router.post("/mdfe/", response_model=MDFeResponse, tags=["MDFe"])
+@mdfe_router.post("/", response_model=MDFeResponse)
 async def emit_mdfe(
-    mdfe: MDFeCreate, 
-    ref: str, 
-    client: FocusNFSeClient = Depends(get_focus_client),
+    mdfe: MDFeCreate,
+    ref: str,
+    client: FocusNFeClient = Depends(get_focus_client),
     db: Session = Depends(get_db)
 ):
     """Emite um novo MDFe."""
@@ -284,28 +204,64 @@ async def emit_mdfe(
     if not response.ok:
         raise HTTPException(status_code=response.status_code, detail=response.body)
     
-    db_invoice = Invoice(
-        referencia=ref,
-        external_id=str(response.body.get("id")) if response.body.get("id") else None,
-        type="mdfe",
-        status=response.body.get("status", "processing"),
-        payload=payload,
-        response_data=response.body
-    )
-    db.add(db_invoice)
-    db.flush()
-    
-    db.add(InvoiceEvent(
-        invoice_id=db_invoice.id,
-        status="enviado",
-        message="MDFe enviado para a FocusNFE",
-        data=response.body
-    ))
-    db.commit()
+    _save_invoice(db, ref, "mdfe", payload, response.body)
     
     return response.body
 
-@router.get("/local/{ref}", tags=["Local Data"])
+# --- Notas Recebidas (Entrada) & MDe ---
+
+@received_router.get("/nfe")
+async def list_received_nfe(
+    cnpj: str,
+    client: FocusNFeClient = Depends(get_focus_client),
+    pagina: int = 1
+):
+    """Consulta NFe emitidas contra o CNPJ (Notas de Entrada)."""
+    response = client.consultar_nfe_recebidas(cnpj, pagina=pagina)
+    if not response.ok:
+        raise HTTPException(status_code=response.status_code, detail=response.body)
+    return response.body
+
+@received_router.post("/nfe/{chave}/manifestar")
+async def manifest_received_nfe(
+    chave: str,
+    req: MDeRequest,
+    client: FocusNFeClient = Depends(get_focus_client)
+):
+    """Realiza a Manifestação do Destinatário (MDe)."""
+    response = client.manifestar_nfe(chave, req.tipo, req.justificativa)
+    if not response.ok:
+        raise HTTPException(status_code=response.status_code, detail=response.body)
+    return response.body
+
+# --- Dashboard & Analytics ---
+
+@dashboard_router.get("/stats")
+async def get_dashboard_stats(db: Session = Depends(get_db)):
+    """Retorna estatísticas rápidas para o Dashboard."""
+    from sqlalchemy import func
+    stats = db.query(Invoice.status, func.count(Invoice.id)).group_by(Invoice.status).all()
+    return {status: count for status, count in stats}
+
+@dashboard_router.get("/list")
+async def list_dashboard_invoices(
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """Lista as últimas notas com informações básicas para o Dashboard."""
+    return db.query(Invoice).order_by(Invoice.created_at.desc()).limit(limit).all()
+
+@dashboard_router.get("/{ref}/timeline")
+async def get_invoice_timeline(ref: str, db: Session = Depends(get_db)):
+    """Retorna a linha do tempo de eventos de uma nota."""
+    invoice = db.query(Invoice).filter(Invoice.referencia == ref).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Nota não encontrada.")
+    return invoice.events
+
+# --- Local Data ---
+
+@local_data_router.get("/{ref}")
 async def get_local_invoice(ref: str, db: Session = Depends(get_db)):
     """
     Retorna os dados da nota armazenados localmente no banco de dados.
@@ -327,12 +283,11 @@ async def get_local_invoice(ref: str, db: Session = Depends(get_db)):
         "response_data": invoice.response_data
     }
 
-@router.get("/municipio/{ibge}")
-async def check_city_requirements(ibge: str, client: FocusNFSeClient = Depends(get_focus_client)):
-    """
-    Consulta requisitos municipais para emissão.
-    """
-    response = client.consultar_municipio(ibge)
-    if not response.ok:
-        raise HTTPException(status_code=response.status_code, detail=response.body)
-    return response.body
+router.include_router(nfse_router)
+router.include_router(nfe_router)
+router.include_router(nfce_router)
+router.include_router(cte_router)
+router.include_router(mdfe_router)
+router.include_router(received_router)
+router.include_router(dashboard_router)
+router.include_router(local_data_router)

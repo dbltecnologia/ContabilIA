@@ -39,14 +39,14 @@ def _load_dotenv_if_present(path: str = ".env") -> None:
 
 
 @dataclass
-class FocusNFSeResponse:
+class FocusNFeResponse:
     status_code: int
     body: Union[Dict[str, Any], List[Any], str, None]
     headers: Mapping[str, str]
     ok: bool
 
     @classmethod
-    def from_httpx(cls, response: httpx.Response) -> "FocusNFSeResponse":
+    def from_httpx(cls, response: httpx.Response) -> "FocusNFeResponse":
         try:
             body = response.json()
         except ValueError:
@@ -59,8 +59,8 @@ class FocusNFSeResponse:
         )
 
 
-class FocusNFSeClient:
-    """Cliente base para trabalhar com NFSe na API Focus NFe v2."""
+class FocusNFeClient:
+    """Cliente base para trabalhar com a API Focus NFe v2."""
 
     def __init__(
         self,
@@ -107,23 +107,23 @@ class FocusNFSeClient:
         *,
         params: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
-    ) -> FocusNFSeResponse:
+    ) -> FocusNFeResponse:
         response = self._client.request(
             method,
             endpoint,
             params=params,
             json=json,
         )
-        return FocusNFSeResponse.from_httpx(response)
+        return FocusNFeResponse.from_httpx(response)
 
     # ----------------------
     # Helpers genéricos (v2)
     # ----------------------
-    def create_document(self, doc_type: str, referencia: str, payload: Dict[str, Any]) -> FocusNFSeResponse:
+    def create_document(self, doc_type: str, referencia: str, payload: Dict[str, Any]) -> FocusNFeResponse:
         params = {"ref": referencia}
         return self._request("POST", f"/v2/{doc_type}", params=params, json=payload)
 
-    def get_document(self, doc_type: str, referencia: str, *, completa: Optional[int] = None) -> FocusNFSeResponse:
+    def get_document(self, doc_type: str, referencia: str, *, completa: Optional[int] = None) -> FocusNFeResponse:
         params: Dict[str, Any] = {}
         if completa is not None:
             params["completa"] = completa
@@ -136,64 +136,64 @@ class FocusNFSeClient:
     # ----------------------
     # NFSe (conveniências)
     # ----------------------
-    def consultar_municipio(self, codigo_ibge: str) -> FocusNFSeResponse:
+    def consultar_municipio(self, codigo_ibge: str) -> FocusNFeResponse:
         """Retorna os requisitos do município para emissão de NFSe."""
         return self._request("GET", f"/v2/municipios/{codigo_ibge}")
 
-    def emitir_nfse(self, referencia: str, dados_nota: Dict[str, Any]) -> FocusNFSeResponse:
+    def emitir_nfse(self, referencia: str, dados_nota: Dict[str, Any]) -> FocusNFeResponse:
         """Envia a NFSe para a fila da Focus com o ref definido."""
         return self.create_document("nfse", referencia, dados_nota)
 
-    def emitir_nfse_nacional(self, referencia: str, dados: Dict[str, Any]) -> FocusNFSeResponse:
+    def emitir_nfse_nacional(self, referencia: str, dados: Dict[str, Any]) -> FocusNFeResponse:
         """Emite NFSe no padrão nacional (nfsen)."""
         return self.create_document("nfsen", referencia, dados)
 
-    def consultar_nfse_nacional(self, referencia: str) -> FocusNFSeResponse:
+    def consultar_nfse_nacional(self, referencia: str) -> FocusNFeResponse:
         """Consulta completa de NFSe Nacional."""
         return self.get_document("nfsen", referencia, completa=1)
 
-    def cancelar_nfse_nacional(self, referencia: str, justificativa: str) -> FocusNFSeResponse:
+    def cancelar_nfse_nacional(self, referencia: str, justificativa: str) -> FocusNFeResponse:
         """Cancela uma NFSe Nacional."""
         if len(justificativa or "") < 15:
             raise ValueError("Justificativa deve ter no mínimo 15 caracteres.")
         payload = {"justificativa": justificativa}
         return self._request("DELETE", f"/v2/nfsen/{referencia}", json=payload)
 
-    def consultar_nfse(self, referencia: str) -> FocusNFSeResponse:
+    def consultar_nfse(self, referencia: str) -> FocusNFeResponse:
         """Consulta completa da NFSe (PDF, XML e status)."""
         return self.get_document("nfse", referencia, completa=1)
 
-    def cancelar_nfse(self, referencia: str, justificativa: str) -> FocusNFSeResponse:
+    def cancelar_nfse(self, referencia: str, justificativa: str) -> FocusNFeResponse:
         """Cancela uma NFSe com justificativa mínima."""
         if len(justificativa or "") < 15:
             raise ValueError("Justificativa deve ter no mínimo 15 caracteres.")
         payload = {"justificativa": justificativa}
         return self._request("DELETE", f"/v2/nfse/{referencia}", json=payload)
 
-    def enviar_email_nfse(self, referencia: str, emails: List[str]) -> FocusNFSeResponse:
+    def enviar_email_nfse(self, referencia: str, emails: List[str]) -> FocusNFeResponse:
         """Solicita o envio do PDF da NFSe para os e-mails informados."""
         payload = {"emails": emails}
         return self._request("POST", f"/v2/nfse/{referencia}/email", json=payload)
 
-    def consultar_nfses_recebidas(self, cnpj: str) -> FocusNFSeResponse:
+    def consultar_nfses_recebidas(self, cnpj: str) -> FocusNFeResponse:
         """Retorna as NFSe onde o CNPJ informado é o tomador."""
         params = {"cnpj": cnpj}
         return self._request("GET", "/v2/nfses_recebidas", params=params)
 
-    def enviar_lote_rps(self, referencia: str, lote_dados: Dict[str, Any]) -> FocusNFSeResponse:
+    def enviar_lote_rps(self, referencia: str, lote_dados: Dict[str, Any]) -> FocusNFeResponse:
         """Envia lote de RPS para prefeituras que usam envio por arquivo."""
         return self.create_document("lotes_rps", referencia, lote_dados)
 
-    def consultar_lote_rps(self, referencia: str) -> FocusNFSeResponse:
+    def consultar_lote_rps(self, referencia: str) -> FocusNFeResponse:
         """Consulta o retorno do lote de RPS enviado à Focus."""
         return self._request("GET", f"/v2/lotes_rps/{referencia}")
 
-    def registrar_webhook(self, event: str, url: str) -> FocusNFSeResponse:
+    def registrar_webhook(self, event: str, url: str) -> FocusNFeResponse:
         """Registra um hook que notifica nossa API quando o status mudar."""
         payload = {"event": event, "url": url}
         return self._request("POST", "/v2/hooks", json=payload)
 
-    def list_documents(self, doc_type: str, params: Optional[Dict[str, Any]] = None) -> FocusNFSeResponse:
+    def list_documents(self, doc_type: str, params: Optional[Dict[str, Any]] = None) -> FocusNFeResponse:
         """Lista os documentos de um determinado tipo com filtros opcionais."""
         return self._request("GET", f"/v2/{doc_type}", params=params)
 
@@ -203,7 +203,7 @@ class FocusNFSeClient:
         data_inicial: Optional[str] = None,
         data_final: Optional[str] = None,
         status: Optional[str] = None,
-    ) -> FocusNFSeResponse:
+    ) -> FocusNFeResponse:
         """Lista as NFSe emitidas com filtros de busca."""
         params = {}
         if cnpj_prestador: params["cnpj_prestador"] = cnpj_prestador
@@ -215,27 +215,27 @@ class FocusNFSeClient:
     # ----------------------
     # NFe (Produtos)
     # ----------------------
-    def emitir_nfe(self, referencia: str, dados_nfe: Dict[str, Any]) -> FocusNFSeResponse:
+    def emitir_nfe(self, referencia: str, dados_nfe: Dict[str, Any]) -> FocusNFeResponse:
         """Envia a NFe para processamento."""
         return self.create_document("nfe", referencia, dados_nfe)
 
-    def consultar_nfe(self, referencia: str) -> FocusNFSeResponse:
+    def consultar_nfe(self, referencia: str) -> FocusNFeResponse:
         """Consulta completa da NFe."""
         return self.get_document("nfe", referencia, completa=1)
 
-    def cancelar_nfe(self, referencia: str, justificativa: str) -> FocusNFSeResponse:
+    def cancelar_nfe(self, referencia: str, justificativa: str) -> FocusNFeResponse:
         """Cancela uma NFe autorizada."""
         if len(justificativa or "") < 15:
             raise ValueError("Justificativa deve ter no mínimo 15 caracteres.")
         payload = {"justificativa": justificativa}
         return self._request("DELETE", f"/v2/nfe/{referencia}", json=payload)
 
-    def enviar_email_nfe(self, referencia: str, emails: List[str]) -> FocusNFSeResponse:
+    def enviar_email_nfe(self, referencia: str, emails: List[str]) -> FocusNFeResponse:
         """Envia DANFe e XML da NFe por e-mail."""
         payload = {"emails": emails}
         return self._request("POST", f"/v2/nfe/{referencia}/email", json=payload)
 
-    def carta_correcao_nfe(self, referencia: str, texto_correcao: str) -> FocusNFSeResponse:
+    def carta_correcao_nfe(self, referencia: str, texto_correcao: str) -> FocusNFeResponse:
         """Envia uma Carta de Correção Eletrônica (CC-e) para a NFe."""
         if len(texto_correcao or "") < 15:
             raise ValueError("Correção deve ter no mínimo 15 caracteres.")
@@ -245,12 +245,12 @@ class FocusNFSeClient:
     # ----------------------
     # Documentos Recebidos (Entrada) & MDe
     # ----------------------
-    def consultar_nfe_recebidas(self, cnpj: str, **kwargs) -> FocusNFSeResponse:
+    def consultar_nfe_recebidas(self, cnpj: str, **kwargs) -> FocusNFeResponse:
         """Consulta as NFe emitidas contra o CNPJ informado."""
         params = {"cnpj": cnpj, **kwargs}
         return self._request("GET", "/v2/nfe_recebidas", params=params)
 
-    def manifestar_nfe(self, chave_nfe: str, tipo: str, justificativa: Optional[str] = None) -> FocusNFSeResponse:
+    def manifestar_nfe(self, chave_nfe: str, tipo: str, justificativa: Optional[str] = None) -> FocusNFeResponse:
         """
         Realiza a Manifestação do Destinatário (MDe).
         Tipos: ciencia, confirmacao, desconhecimento, operacao_nao_realizada
@@ -263,15 +263,15 @@ class FocusNFSeClient:
     # ----------------------
     # CTe (Transporte)
     # ----------------------
-    def emitir_cte(self, referencia: str, dados_cte: Dict[str, Any]) -> FocusNFSeResponse:
+    def emitir_cte(self, referencia: str, dados_cte: Dict[str, Any]) -> FocusNFeResponse:
         """Envia o CTe para processamento."""
         return self.create_document("cte", referencia, dados_cte)
 
-    def consultar_cte(self, referencia: str) -> FocusNFSeResponse:
+    def consultar_cte(self, referencia: str) -> FocusNFeResponse:
         """Consulta completa do CTe."""
         return self.get_document("cte", referencia, completa=1)
 
-    def cancelar_cte(self, referencia: str, justificativa: str) -> FocusNFSeResponse:
+    def cancelar_cte(self, referencia: str, justificativa: str) -> FocusNFeResponse:
         """Cancela um CTe autorizado."""
         if len(justificativa or "") < 15:
             raise ValueError("Justificativa deve ter no mínimo 15 caracteres.")
@@ -281,15 +281,15 @@ class FocusNFSeClient:
     # ----------------------
     # MDFe (Manifesto)
     # ----------------------
-    def emitir_mdfe(self, referencia: str, dados_mdfe: Dict[str, Any]) -> FocusNFSeResponse:
+    def emitir_mdfe(self, referencia: str, dados_mdfe: Dict[str, Any]) -> FocusNFeResponse:
         """Envia o MDFe para processamento."""
         return self.create_document("mdfe", referencia, dados_mdfe)
 
-    def consultar_mdfe(self, referencia: str) -> FocusNFSeResponse:
+    def consultar_mdfe(self, referencia: str) -> FocusNFeResponse:
         """Consulta completa do MDFe."""
         return self.get_document("mdfe", referencia, completa=1)
 
-    def encerrar_mdfe(self, referencia: str, codigo_municipio: str) -> FocusNFSeResponse:
+    def encerrar_mdfe(self, referencia: str, codigo_municipio: str) -> FocusNFeResponse:
         """Encerra um MDFe autorizado informando o município de encerramento."""
         payload = {"fechamento_municipio": codigo_municipio}
         return self._request("POST", f"/v2/mdfe/{referencia}/encerrar", json=payload)
@@ -297,12 +297,9 @@ class FocusNFSeClient:
     def close(self) -> None:
         self._client.close()
 
-    def __enter__(self) -> "FocusNFSeClient":
+    def __enter__(self) -> "FocusNFeClient":
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
 
-
-FocusNFeResponse = FocusNFSeResponse
-FocusNFeClient = FocusNFSeClient

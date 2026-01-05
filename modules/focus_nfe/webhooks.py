@@ -2,13 +2,13 @@ from fastapi import APIRouter, Request, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 from .database import get_db
 from .models import WebhookLog, Invoice, InvoiceEvent
-from .focus_client import FocusNFSeClient
+from .focus_client import FocusNFeClient
 import os
 import httpx
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
-STORAGE_PATH = "storage/invoices"
+STORAGE_PATH = os.getenv("STORAGE_PATH", "storage/invoices")
 
 def save_document(ref: str, ext: str, content: bytes):
     """Salva o arquivo localmente em uma estrutura organizada."""
@@ -45,14 +45,14 @@ async def process_focusnfe_webhook(payload: dict, db: Session):
         
         # 2. Se autorizada, disparar downloads
         if status in ["autorizado", "authorized"]:
-            with FocusNFSeClient() as client:
+            with FocusNFeClient() as client:
                 # PDF
-                pdf_res = client.download_document("nfse" if "nfse" in ref.lower() else "nfe", ref, "pdf")
+                pdf_res = client.download_document(invoice.type, ref, "pdf")
                 if pdf_res.status_code == 200:
                     invoice.pdf_url = save_document(ref, "pdf", pdf_res.content)
                 
                 # XML
-                xml_res = client.download_document("nfse" if "nfse" in ref.lower() else "nfe", ref, "xml")
+                xml_res = client.download_document(invoice.type, ref, "xml")
                 if xml_res.status_code == 200:
                     invoice.xml_url = save_document(ref, "xml", xml_res.content)
         

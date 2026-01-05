@@ -1,17 +1,16 @@
+# Environments
 .env
-.venv/
-venv/
+
+# Temporary files
+temp/
+
+# Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.DS_Store
-node_modules/
-dist/
+
+# Node
 dashboard/node_modules/
 dashboard/dist/
-*.db
-storage/invoices/
+
+# Database
+contabil_ia.db
