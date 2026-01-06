@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from modules.focus_nfe.focus_client import _load_dotenv_if_present
 from modules.focus_nfe.router import router as focus_router
 from modules.focus_nfe.webhooks import router as webhook_router
 from fastapi.staticfiles import StaticFiles
@@ -15,6 +16,7 @@ app = FastAPI(
 # Startup event
 @app.on_event("startup")
 def on_startup():
+    _load_dotenv_if_present()
     init_db()
 
 # Root endpoint
