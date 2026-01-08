@@ -14,6 +14,7 @@ def test_emit_mock_nfse():
             "codigo_municipio": "3550308"
         },
         "tomador": {
+            "cpf": "12345678901",
             "razao_social": "Cliente de Teste no Script",
             "endereco": {
                 "logradouro": "Rua de Teste",

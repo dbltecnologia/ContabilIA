@@ -29,6 +29,9 @@ def test_emit_mock_nfce():
                 "cofins_situacao_tributaria": "07"
             }
         ],
+        "tomador": {
+            "cpf": "12345678901"
+        },
         "prestador": {
             "cnpj": "12345678000199",
             "codigo_municipio": "3550308"

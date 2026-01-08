@@ -15,6 +15,7 @@ def test_full_lifecycle():
     emission_payload = {
         "prestador": {"cnpj": "12345678000199", "codigo_municipio": "3550308"},
         "tomador": {
+            "cpf": "12345678901",
             "razao_social": "Ciclo de Vida Teste",
             "endereco": {
                 "logradouro": "Rua de Teste",
