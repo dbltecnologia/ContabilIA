@@ -2,7 +2,7 @@ import requests
 import json
 import uuid
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = "http://localhost:8001/api"
 
 def test_emit_mock_mdfe():
     ref = f"MDFE-{uuid.uuid4().hex[:8]}"

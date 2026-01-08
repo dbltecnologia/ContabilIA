@@ -4,7 +4,7 @@ import uuid
 import time
 import os
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = "http://localhost:8001/api"
 
 def test_full_lifecycle():
     ref = f"LIFE-{uuid.uuid4().hex[:8]}"

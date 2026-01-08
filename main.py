@@ -40,4 +40,8 @@ if os.path.exists(DASHBOARD_PATH):
     app.mount("/dashboard", StaticFiles(directory=DASHBOARD_PATH, html=True), name="dashboard")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import sys
+    port = 8000
+    if "--port" in sys.argv:
+        port = int(sys.argv[sys.argv.index("--port") + 1])
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
