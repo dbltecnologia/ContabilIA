@@ -2,7 +2,7 @@ import requests
 import json
 import uuid
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8000/api"
 
 def test_emit_mock_nfse():
     ref = f"TEST-{uuid.uuid4().hex[:8]}"

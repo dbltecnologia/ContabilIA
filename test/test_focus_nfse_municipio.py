@@ -2,7 +2,7 @@ import requests
 import json
 import os
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8000/api"
 
 def test_municipio_requirements(ibge_code="3550308"): # São Paulo
     print(f"=== Testando requisitos para município {ibge_code} ===")

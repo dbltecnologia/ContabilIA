@@ -2,7 +2,7 @@ import requests
 import json
 import os
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8000/api"
 
 def test_list_received_invoices(cnpj="12345678000199"):
     print(f"=== Testando busca de notas recebidas (ENTRADA) para CNPJ: {cnpj} ===")

@@ -2,7 +2,7 @@ import requests
 import json
 import uuid
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8000/api"
 
 def test_emit_mock_nfe():
     ref = f"NFE-{uuid.uuid4().hex[:8]}"
@@ -47,7 +47,7 @@ def test_emit_mock_nfe():
     }
 
     try:
-        response = requests.post(f"{BASE_URL}/nfse/nfe/?ref={ref}", json=payload, timeout=10)
+        response = requests.post(f"{BASE_URL}/nfe/?ref={ref}", json=payload, timeout=10)
         if response.status_code == 200:
             print("Sucesso na emissão da NFe!")
             print(json.dumps(response.json(), indent=2, ensure_ascii=False))
